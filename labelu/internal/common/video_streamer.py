@@ -48,7 +48,8 @@ class VideoStreamer:
 
             output_path = input_file.parent / "output.mp4"
 
-            cmd = f"ffmpeg -i '{str(input_file)}' -c:v libx264 -profile:v high -level 4.0 -pix_fmt yuv420p -r 30 -c:a aac -b:a 128k -y '{output_path}'"
+            # cmd = f"ffmpeg -i '{str(input_file)}' -c:v libx264 -profile:v high -level 4.0 -pix_fmt yuv420p -r 30 -c:a aac -b:a 128k -y '{output_path}'"
+            cmd = f"ffmpeg -i '{str(input_file)}' -c:v libx264 -crf 28 -preset slow -vf scale=-2:720 -an -movflags +faststart '{output_path}'"
             logger.info(f"Converting video to HLS: {input_path}, cmd: {cmd}")
 
             # Run FFmpeg conversion
