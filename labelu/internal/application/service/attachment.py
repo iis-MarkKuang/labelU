@@ -108,12 +108,14 @@ async def create(
     # convert video to HLS streaming format
     if cmd.file.content_type.startswith("video/") or VideoStreamer.is_video_file(sanitized):
         logger.info(f"Converting video to HLS streaming format: {attachment_full_path}")
-        hls_playlist = await VideoStreamer.convert_to_hls(str(attachment_full_path))
-        if hls_playlist:
-            logger.info(f"Video converted to HLS: {hls_playlist}")
+        converted_mp4_path = await VideoStreamer.convert_mp4(str(attachment_full_path))
+        if converted_mp4_path and converted_mp4_path.exists():
+            logger.info(f"Video converted to HLS: {converted_mp4_path}")
+            attachment_relative_path = str(converted_mp4_path.relative_to(settings.MEDIA_ROOT))
         else:
             logger.warning(f"Failed to convert video to HLS: {attachment_full_path}")
 
+    logger.info(f"Relative path: {attachment_relative_path}")
     # check file already saved
     if not attachment_full_path.exists() or (
             cmd.file.content_type.startswith("image/") and not tumbnail_full_path.exists()
@@ -130,16 +132,17 @@ async def create(
         )
 
     attachment_url_path = attachment_relative_path.replace("\\", "/")
-
-    # Use streaming URL for videos
-    if cmd.file.content_type.startswith("video/") or VideoStreamer.is_video_file(sanitized):
-        attachment_api_url = VideoStreamer.get_streaming_url(
-            attachment_url_path,
-            f"{settings.API_V1_STR}/tasks/attachment"
-        )
-    else:
-        attachment_api_url = f"{settings.API_V1_STR}/tasks/attachment/{attachment_url_path}"
+    #
+    # # Use streaming URL for videos
+    # if cmd.file.content_type.startswith("video/") or VideoStreamer.is_video_file(sanitized):
+    #     attachment_api_url = VideoStreamer.get_streaming_url(
+    #         attachment_url_path,
+    #         f"{settings.API_V1_STR}/tasks/attachment"
+    #     )
+    # else:
+    attachment_api_url = f"{settings.API_V1_STR}/tasks/attachment/{attachment_url_path}"
     # add a task file record
+
     with db.begin():
         attachment = crud_attachment.create(
             db=db,

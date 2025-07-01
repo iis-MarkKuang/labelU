@@ -215,13 +215,14 @@ async def stream_video(file_path: str):
         # Check if it's a video file
         if VideoStreamer.is_video_file(str(full_path)):
             # Convert to HLS if not already done
-            hls_playlist = await VideoStreamer.convert_to_hls(str(full_path))
-            if hls_playlist and Path(hls_playlist).exists():
+            converted_mp4_path = await VideoStreamer.convert_mp4(str(full_path))
+            if converted_mp4_path and converted_mp4_path.exists():
                 return FileResponse(
-                    hls_playlist,
+                    converted_mp4_path,
                     media_type="application/vnd.apple.mpegurl",
                     headers={"Cache-Control": "no-cache"}
                 )
+            full_path = converted_mp4_path
 
         # Fall back to regular file serving
         return FileResponse(full_path)

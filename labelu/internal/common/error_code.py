@@ -10,6 +10,7 @@ from labelu.internal.common.config import settings
 
 import pkg_resources
 import os
+import traceback
 
 # common init error code
 COMMON_INIT_CODE = 30000
@@ -185,6 +186,7 @@ async def validation_exception_handler(request, exc):
     )
 
 async def unexpected_exception_handler(request: Request, exc: Exception):
+    logger.error(traceback.format_exc())
     logger.error(exc)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

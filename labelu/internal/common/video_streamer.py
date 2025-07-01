@@ -1,5 +1,6 @@
 import os
 import subprocess
+import traceback
 from pathlib import Path
 from typing import Optional
 from loguru import logger
@@ -23,13 +24,18 @@ class VideoStreamer:
         return str(hls_dir / "playlist.m3u8")
 
     @staticmethod
+    def get_converted_mp4_path(original_path: str) -> str:
+        path = Path(original_path)
+        return str(path.parent / "output.mp4")
+
+    @staticmethod
     def get_hls_dir(original_path: str) -> Path:
         """Get HLS directory path for original video"""
         path = Path(original_path)
         return path.parent / f"{path.stem}_hls"
 
     @staticmethod
-    async def convert_to_hls(input_path: str, force_reconvert: bool = False) -> Optional[str]:
+    async def convert_mp4(input_path: str, force_reconvert: bool = False) -> Optional[Path]:
         """
         Convert video to HLS format
         Returns the playlist path if successful, None if failed
@@ -40,44 +46,23 @@ class VideoStreamer:
                 logger.error(f"Input video file not found: {input_path}")
                 return None
 
-            hls_dir = VideoStreamer.get_hls_dir(input_path)
-            playlist_path = hls_dir / "playlist.m3u8"
+            output_path = input_file.parent / "output.mp4"
 
-            # Check if already converted and not forcing reconversion
-            if not force_reconvert and playlist_path.exists():
-                logger.info(f"HLS already exists for {input_path}")
-                return str(playlist_path)
-
-            # Create HLS directory
-            hls_dir.mkdir(parents=True, exist_ok=True)
-
-            # FFmpeg command for HLS conversion
-            cmd = [
-                "ffmpeg",
-                "-i", str(input_file),
-                "-codec:v", "libx264",
-                "-codec:a", "aac",
-                "-hls_time", "10",  # 10 second segments
-                "-hls_playlist_type", "vod",
-                "-hls_segment_filename", str(hls_dir / "segment%03d.ts"),
-                "-start_number", "0",
-                "-y",  # Overwrite output files
-                str(playlist_path)
-            ]
-
-            logger.info(f"Converting video to HLS: {input_path}")
+            cmd = f"ffmpeg -i '{str(input_file)}' -c:v libx264 -profile:v high -level 4.0 -pix_fmt yuv420p -r 30 -c:a aac -b:a 128k -y '{output_path}'"
+            logger.info(f"Converting video to HLS: {input_path}, cmd: {cmd}")
 
             # Run FFmpeg conversion
             process = subprocess.run(
                 cmd,
+                shell=True,
                 capture_output=True,
                 text=True,
                 timeout=300  # 5 minute timeout
             )
 
             if process.returncode == 0:
-                logger.info(f"Successfully converted video to HLS: {playlist_path}")
-                return str(playlist_path)
+                logger.info(f"Successfully converted video: {output_path}")
+                return output_path
             else:
                 logger.error(f"FFmpeg conversion failed: {process.stderr}")
                 return None
@@ -86,15 +71,16 @@ class VideoStreamer:
             logger.error(f"Video conversion timeout for {input_path}")
             return None
         except Exception as e:
-            logger.error(f"Error converting video to HLS: {str(e)}")
+            logger.error(f"Error converting video to HLS: {traceback.format_exc()}")
+            # logger.error(f"Error converting video to HLS: {str(e)}")
             return None
 
     @staticmethod
     def get_streaming_url(original_path: str, base_url: str) -> str:
         """Get streaming URL for video"""
         if VideoStreamer.is_video_file(original_path):
-            hls_path = VideoStreamer.get_hls_path(original_path)
+            converted_mp4_path = VideoStreamer.get_converted_mp4_path(original_path)
             # Convert absolute path to relative URL path
-            relative_path = os.path.relpath(hls_path, settings.MEDIA_ROOT)
+            relative_path = os.path.relpath(converted_mp4_path, settings.MEDIA_ROOT)
             return f"{base_url}/{relative_path.replace(os.sep, '/')}"
         return f"{base_url}/{original_path.replace(os.sep, '/')}"
