@@ -132,16 +132,7 @@ async def create(
         )
 
     attachment_url_path = attachment_relative_path.replace("\\", "/")
-    #
-    # # Use streaming URL for videos
-    # if cmd.file.content_type.startswith("video/") or VideoStreamer.is_video_file(sanitized):
-    #     attachment_api_url = VideoStreamer.get_streaming_url(
-    #         attachment_url_path,
-    #         f"{settings.API_V1_STR}/tasks/attachment"
-    #     )
-    # else:
     attachment_api_url = f"{settings.API_V1_STR}/tasks/attachment/{attachment_url_path}"
-    # add a task file record
 
     with db.begin():
         attachment = crud_attachment.create(

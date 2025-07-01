@@ -22,7 +22,6 @@ from labelu.internal.application.response.task import TaskResponseWithStatics
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
-
 @router.post(
     "",
     response_model=OkResp[TaskResponse],
