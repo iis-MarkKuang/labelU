@@ -4,9 +4,20 @@ from typing import Any, Dict, List, Tuple
 
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
+# from loguru import logger
 
 from labelu.internal.domain.models.task import Task
 from labelu.internal.domain.models.task_collaborator import TaskCollaborator
+# from sqlalchemy import event
+#
+# @event.listens_for(Task, 'after_insert')
+# def handle_task_insert(mapper, connection, target):
+#     logger.info(f"新任务创建: ID={target.id}, name={target.name}")
+#
+#
+# @event.listens_for(Task, 'after_update', propagate=True)
+# def handle_attachment_update(mapper, connection, target):
+#     logger.info(f"任务更新: ID={target.id}, name={target.name}")
 
 
 def create(db: Session, task: Task) -> Task:

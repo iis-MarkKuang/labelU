@@ -5,6 +5,7 @@ from typer import Typer
 from fastapi import FastAPI, Response
 from fastapi.staticfiles import StaticFiles
 
+from labelu.internal.adapter.db_listener.db_update_listener import start_polling
 from labelu.internal.adapter.routers import add_router
 from labelu.internal.adapter.ws import add_ws_router
 from labelu.internal.middleware import add_middleware
@@ -102,6 +103,8 @@ def startup():
     if settings.need_migration_to_mysql:
         logger.info("Migrating database to MySQL")
         migrate_to_mysql()
+    start_polling()
+
 
 app.add_event_handler("startup", startup)
 
@@ -142,7 +145,8 @@ def main(
         settings.HOST = host
     if media_host:
         settings.MEDIA_HOST = media_host
-        
+
+    start_polling()
     uvicorn.run(app=app, host=settings.HOST, port=settings.PORT, ws="websockets")
         
 
