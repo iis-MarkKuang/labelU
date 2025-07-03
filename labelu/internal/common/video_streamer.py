@@ -46,7 +46,7 @@ class VideoStreamer:
                 logger.error(f"Input video file not found: {input_path}")
                 return None
 
-            output_path = input_file.parent / "output.mp4"
+            output_path = input_file.parent / f"{input_file.name.split('.')[0]}_output.mp4"
 
             # cmd = f"ffmpeg -i '{str(input_file)}' -c:v libx264 -profile:v high -level 4.0 -pix_fmt yuv420p -r 30 -c:a aac -b:a 128k -y '{output_path}'"
             cmd = f"ffmpeg -i '{str(input_file)}' -c:v libx264 -crf 28 -preset slow -vf scale=-2:720 -an -movflags +faststart '{output_path}'"
