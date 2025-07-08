@@ -4,6 +4,7 @@ import uvicorn
 from typer import Typer
 from fastapi import FastAPI, Response
 from fastapi.staticfiles import StaticFiles
+import multiprocessing
 
 from labelu.internal.adapter.db_listener.db_update_listener import start_polling
 from labelu.internal.adapter.routers import add_router
@@ -103,7 +104,10 @@ def startup():
     if settings.need_migration_to_mysql:
         logger.info("Migrating database to MySQL")
         migrate_to_mysql()
-    start_polling()
+    # Start polling in a separate process
+    polling_process = multiprocessing.Process(target=start_polling)
+    polling_process.daemon = True
+    polling_process.start()
 
 
 app.add_event_handler("startup", startup)
@@ -146,7 +150,10 @@ def main(
     if media_host:
         settings.MEDIA_HOST = media_host
 
-    start_polling()
+    # Start polling in a separate process
+    # polling_process = multiprocessing.Process(target=start_polling)
+    # polling_process.daemon = True
+    # polling_process.start()
     uvicorn.run(app=app, host=settings.HOST, port=settings.PORT, ws="websockets")
         
 

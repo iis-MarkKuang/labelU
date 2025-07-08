@@ -10,7 +10,6 @@ from loguru import logger
 # 创建数据库会话
 engine = create_engine(settings.DATABASE_URL)
 Session = sessionmaker(bind=engine)
-session = Session()
 
 # 内存缓存 - 存储最新的任务数据
 latest_task_cache = None
@@ -18,6 +17,9 @@ latest_task_cache = None
 
 def get_latest_task_from_db():
     """从数据库获取最新的任务"""
+    # sql alchemy sessions need to be created each time for it to be aware of the latest changes.
+    session = Session()
+
     try:
         # 查询最新的一条任务记录
         latest_task = session.query(Task) \
@@ -29,37 +31,35 @@ def get_latest_task_from_db():
     except Exception as e:
         logger.error(f"获取最新任务失败: {e}")
         return None
+    finally:
+        session.close()
 
 
 def check_and_process_updates():
-    """检查并处理任务更新"""
     global latest_task_cache
 
-    # 获取数据库中最新的任务
     current_latest_task = get_latest_task_from_db()
 
     if current_latest_task is None:
         logger.info("数据库中没有任务记录")
         return
 
-    # 首次运行，初始化缓存
+    logger.info(f"current_latest_task id: {current_latest_task.id}")
+
+
     if latest_task_cache is None:
         logger.info(f"初始化缓存: 最新任务 ID={current_latest_task.id}")
         latest_task_cache = current_latest_task
         return
 
-    # 比较数据库中的最新任务与缓存中的任务
-    if current_latest_task.updated_at > latest_task_cache.updated_at:
+    # Compare by id or updated_at
+    if current_latest_task.id > latest_task_cache.id or \
+       current_latest_task.updated_at > latest_task_cache.updated_at:
         logger.info(f"检测到任务更新: ID={current_latest_task.id}, 更新时间={current_latest_task.updated_at}")
-
-        # 执行更新操作
         process_task_update(current_latest_task)
-
-        # 更新缓存
         latest_task_cache = current_latest_task
     else:
         logger.info("没有检测到任务更新")
-
 
 def process_task_update(task):
     """处理任务更新的业务逻辑"""
